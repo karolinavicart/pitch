@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Value Leakage Model</title>
+<style>
+    :root {
+        --primary: #2b5cff;
+        --primary-dark: #2148c0;
+        --accent: #ffc857;
+        --bg: #f3f4f6;
+        --card-bg: #ffffff;
+        --border-soft: #d9e1ff;
+        --text-main: #222;
+        --text-muted: #555;
+    }
+
+    body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 24px 16px;
+        background-color: var(--bg);
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        box-sizing: border-box;
+    }
+
+    .page {
+        max-width: 980px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 6px;
+        font-size: 1.4rem;
+    }
+
+    .intro {
+        max-width: 900px;
+        margin: 0 auto 20px auto;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .card {
+        background-color: var(--card-bg);
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        box-sizing: border-box;
+    }
+
+    .layout {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        align-items: stretch;
+        margin-top: 14px;
+    }
+
+    .input-group {
+        margin-bottom: 14px;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccd2e7;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: #f9fafb;
+    }
+
+    input[type="number"]:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 1px rgba(43, 92, 255, 0.18);
+        background: #ffffff;
+    }
+
+    small {
+        display: block;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-size: 0.78rem;
+    }
+
+    small a {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    .button-row {
+        margin-top: 10px;
+        margin-bottom: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    button {
+        background-color: var(--primary);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 8px 20px rgba(43, 92, 255, 0.3);
+        transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.1s ease;
+    }
+
+    button:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+    }
+
+    button:active {
+        transform: translateY(0);
+        box-shadow: 0 5px 12px rgba(15, 23, 42, 0.18);
+    }
+
+    .secondary-btn {
+        background-color: #e5e7eb;
+        color: #111827;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+    }
+
+    .secondary-btn:hover {
+        background-color: #d1d5db;
+    }
+
+    .scenario-note {
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .results-card {
+        margin-bottom: 8px;
+        border: 1px solid var(--border-soft);
+        background: linear-gradient(135deg, #eff6ff, #e5e7eb);
+        border-radius: 14px;
+    }
+
+    .results-card h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .results-table tr + tr td {
+        border-top: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .results-table td {
+        padding: 4px 4px;
+    }
+
+    .results-table td.label {
+        white-space: nowrap;
+        padding-right: 16px;
+    }
+
+    .results-table td.value {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        width: 45%;
+    }
+
+    .results-table tr.total-row td {
+        padding-top: 8px;
+        border-top: 1px solid rgba(0,0,0,0.15);
+        font-weight: 700;
+    }
+
+    .calc-note {
+        font-size: 0.72rem;  /* smaller than normal text */
+        color: #555;         /* slightly muted grey */
+}
+
+    .Karolina-card {
+        position: relative;
+        border-radius: 12px;
+        background: #fff7d1;
+        border: 1px solid #f0d27a;
+        padding: 12px 14px;
+        font-size: 0.85rem;
+        color: #5a4900;
+        display: none;
+        box-shadow: 0 6px 16px rgba(148, 114, 20, 0.25);
+    }
+
+    .Karolina-card-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .Karolina-icon {
+        font-size: 1.4rem;
+        line-height: 1;
+        margin-top: 2px;
+    }
+
+    .Karolina-body {
+        font-style: italic;
+        line-height: 1.4;
+    }
+
+    .Karolina-close {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        border: none;
+        background: transparent;
+        font-size: 1rem;
+        cursor: pointer;
+        color: #7c6a20;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .Karolina-close:hover {
+        color: #4d3f00;
+    }
+
+    .sub-authorship {
+        text-align: center;
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 24px;
+        margin-bottom: 6px;
+        width: 100%;
+    }
+
+    @media (max-width: 600px) {
+        h1 {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="page">
+    <h1>AP Value Leakage Model</h1>
+    <p class="intro">
+        This calculator estimates the financial impact of manual invoice processing inefficiencies versus an
+        automated set-up. Baseline values are <strong>triangulated</strong> from multiple independent,
+        internationally recognised benchmarks (APQC, IOFM, AFP, IFOL, EU Late Payment Directive, etc.).
+    </p>
+
+    <div class="layout">
+        <!-- INPUTS -->
+        <div class="card">
+            <h2 style="margin-top:0;margin-bottom:10px;font-size:1rem;">Assumptions</h2>
+
+            <div class="input-group">
+                <label for="invoiceVolume">Annual invoice volume</label>
+                <input id="invoiceVolume" type="number" value="50000" min="0">
+                <small>
+                    Number of supplier invoices processed per year. If unknown, use a rounded estimate from
+                    Coupa / AX / legacy reports.
+                </small>
+            </div>
+
+            <div class="input-group">
+                <label for="avgInvoiceValue">Average invoice value (€)</label>
+                <input id="avgInvoiceValue" type="number" value="1000" step="0.01" min="0">
+                <small>
+                    Approximate average supplier invoice amount. As a fallback, divide annual indirect spend
+                    by annual invoice count.
+                </small>
+            </div>
+
+            <div class="input-group">
+              <label for="manualCost">Manual processing cost per invoice (€)</label>
+              <input id="manualCost" type="number" value="16.00" step="0.01" min="0">
+              <small>
+                <strong>€16</strong> is the midpoint of the overlapping ranges found in three independent benchmarks (Ardent, IOFM, Unitfly). Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>€14–€20</strong> –
+                    <a href="https://resolvepay.com/blog/13-statistics-that-quantify-cost-per-invoice-in-manual-vs-automated-flows"
+                       target="_blank" rel="noopener">
+                      Ardent Partners / ResolvePay benchmark</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€9–€18</strong> –
+                    <a href="https://unitfly.com/insights/costs-of-manual-invoice-processing/"
+                       target="_blank" rel="noopener">
+                      Unitfly “Costs of Manual Invoice Processing”</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€9–€23</strong> –
+                    <a href="https://www.iofm.com/ap/process-improvement/automation/special-report-true-costs-paper-based-invoice-processing-disbursements"
+                       target="_blank" rel="noopener">
+                      IOFM “True Costs of Paper-Based Invoice Processing”</a> (2019)
+                  </li>
+                 </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="automatedCost">Automated processing cost per invoice (€)</label>
+              <input id="automatedCost" type="number" value="3.05" step="0.01" min="0">
+              <small>
+                <strong>€3.05</strong> is the midpoint of the overlapping ranges found across the following automation benchmarks: Ardent, APQC, IOFM, Unitfly, Billentis/Levvel syntheses. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>€2.00–€6.00</strong> –
+                    <a href="https://unitfly.com/insights/costs-of-manual-invoice-processing/" target="_blank" rel="noopener">
+                      Unitfly – “Costs of Manual vs Automated Invoice Processing”</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€2.27–€5.45</strong> –
+                    <a href="https://resolvepay.com/blog/13-statistics-that-quantify-cost-per-invoice-in-manual-vs-automated-flows" target="_blank" rel="noopener">
+                      ResolvePay – “Cost per Invoice in Manual vs Automated Flows”</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€1.82–€4.55</strong> –
+                    <a href="https://parseur.com/blog/ai-invoice-processing-benchmarks" target="_blank" rel="noopener">
+                      Parseur – “AI Invoice Processing Benchmarks”</a> (2025)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="dupRate">Duplicate payment rate (% of spend)</label>
+              <input id="dupRate" type="number" value="0.08" step="0.0001" min="0">
+              <small>
+                <strong>0.08%</strong> is the midpoint of the overlapping ranges found across the following benchmarks: IOFM, FlexTecs, SAP. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>0.05%–0.10%</strong> –
+                    <a href="https://flextrap.flextecs.com/flextrap-blog/duplicate-payment-errors-disrupting-cash-flow" target="_blank" rel="noopener">
+                      FlexTecs – "Duplicate Payment Errors and Cash Flow"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>0.05%–0.10%</strong> –
+                    <a href="https://www.bcsprosoft.com/duplicate-payments/" target="_blank" rel="noopener">
+                      BCS ProSoft (citing IOFM) – "Duplicate Payments in AP"</a> (2024)
+                  </li>
+                  <li>
+                    ≈<strong>0.10%</strong> –
+                    <a href="https://community.sap.com/t5/additional-blog-posts-by-sap/why-master-data-management-must-be-one-of-the-first-steps-in-post-merger/ba-p/13145597" target="_blank" rel="noopener">
+                      SAP – "Master Data Management & Post-Merger Integration"</a> (2015)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="manualErrorRate">Manual error rate (% of invoices)</label>
+              <input id="manualErrorRate" type="number" value="2" step="0.01" min="0" max="100">
+              <small>
+                <strong>2%</strong> is a conservative midpoint within the ranges found across APQC, IOFM and Perk/IOFM summaries of manual AP error rates. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>2%</strong> –
+                    <a href="https://www.stampli.com/blog/accounts-payable/accounts-payable-statistics/" target="_blank" rel="noopener">
+                      APQC (via Stampli) – AP error benchmarks</a> (2024)
+                  </li>
+                  <li>
+                    ≈<strong>3–5%</strong> –
+                    <a href="https://www.perk.com/blog/invoice-coding/" target="_blank" rel="noopener">
+                      Perk (IOFM-derived) – Invoice coding errors</a> (2023)
+                  </li>
+                  <li>
+                    ≈<strong>3–5%</strong> –
+                    <a href="https://dataline.com.au/the-true-cost-of-manual-invoice-processing/" target="_blank" rel="noopener">
+                      IOFM – Manual AP error rates (via Dataline)</a> (2023)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="automatedErrorRate">Automated error rate (% of invoices)</label>
+              <input id="automatedErrorRate" type="number" value="0.8" step="0.01" min="0" max="100">
+              <small>
+                <strong>0.8%</strong> is the midpoint of the overlapping ranges found across APQC, IOFM and Levvel/PayStream automation benchmarks. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>1.0%</strong> –
+                    <a href="https://www.ascendsoftware.com/blog/what-good-looks-like-ap-benchmarks-every-modern-team-should-know-in-2025" target="_blank" rel="noopener">
+                      IOFM automation findings (via Ascend)</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>0.7%–1.0%</strong> –
+                    <a href="https://www.stampli.com/blog/accounts-payable/accounts-payable-statistics/" target="_blank" rel="noopener">
+                      APQC (via Stampli)</a> (2024)
+                  </li>
+                  <li>
+                    <strong><1.0%</strong> –
+                    <a href="https://www.levvel.io/resource-library/" target="_blank" rel="noopener">
+                      Levvel / PayStream – AP Automation</a> (2022)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="errorFixCost">Cost to fix each error (€)</label>
+              <input id="errorFixCost" type="number" value="48.64" step="0.01" min="0">
+              <small>
+                <strong>€48.64</strong> is the midpoint of the overlapping ranges found in IOFM-derived benchmarks. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>€48.64</strong> –
+                    <a href="https://www.artsyltech.com/blog/invoice-processing-automation-guide"
+                       target="_blank" rel="noopener">
+                      Artsyl – "Invoice Processing Automation: 2025 ROI Formula Guide"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€48.18</strong> –
+                    <a href="https://blog.symtrax.com/why-manual-invoice-processing-is-costing-your-business-more-than-you-think/"
+                       target="_blank" rel="noopener">
+                      IOFM/Sterling – "Cost of AP Error Resolution"</a> (2025)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="latePaymentRate">Late payment rate (% of invoices)</label>
+              <input id="latePaymentRate" type="number" value="5.00" step="0.01" min="0">
+              <small>
+                <strong>5.00%</strong> is a conservative midpoint of overlapping late-payment metrics. Outliers removed.
+                <ul>
+                  <li>
+                    ≈<strong>5%</strong> –
+                    <a href="https://ramp.com/blog/accounts-payable-metrics"
+                       target="_blank" rel="noopener">
+                      Ramp – "Accounts Payable Metrics to Track"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>2%–5%</strong> –
+                    <a href="https://www.integratz.com/blog/essential-ap-metrics"
+                       target="_blank" rel="noopener">
+                      Integratz – "Essential AP Performance Metrics"</a> (2024)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="latePenalty">Average late payment penalty per invoice (€)</label>
+              <input id="latePenalty" type="number" value="40.00" step="0.01" min="0">
+              <small>
+                <strong>€40</strong> reflects the fixed compensation fee defined in the EU Late Payment framework, excluding additional interest.
+                <ul>
+                  <li>
+                    ≈<strong>€40</strong> –
+                    <a href="https://www.heropay.eu/en/blog/how-to-calculate-late-penalties"
+                       target="_blank" rel="noopener">
+                      Heropay – "How to Calculate Late Payment Penalties"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>€40</strong> –
+                    <a href="https://europa.eu/youreurope/business/finance-funding/making-receiving-payments/late-payment/index_en.htm"
+                       target="_blank" rel="noopener">
+                      EU Commission – "B2B Late Payments: Interest & Penalties"</a> (2021)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="earlyDiscountRate">Early payment discount rate (% of invoice)</label>
+              <input id="earlyDiscountRate" type="number" value="2.00" step="0.01" min="0">
+              <small>
+                <strong>2.00%</strong> reflects standard “2/10 net 30” type early payment discount terms.
+                <ul>
+                  <li>
+                    ≈<strong>1%–3%</strong> –
+                    <a href="https://www.helloaria.eu/resources/early-payment-discounts-optimize-your-cash-flow-and-strengthen-supplier-relationships/"
+                       target="_blank" rel="noopener">
+                      HelloAria – "Early Payment Discounts Guide"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>1%–2%</strong> –
+                    <a href="https://www.invoiced.com/resources/blog/early-payment-discount"
+                       target="_blank" rel="noopener">
+                      Invoiced – "Early Payment Discount Guide"</a> (2025)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="currentDiscountCapture">Current discount capture rate (% of available discounts)</label>
+              <input id="currentDiscountCapture" type="number" value="21.00" step="0.01" min="0">
+              <small>
+                <strong>21.00%</strong> is a conservative baseline for manual/semi-manual AP.
+                <ul>
+                  <li>
+                    ≈<strong>&lt;21%</strong> –
+                    <a href="https://www.zaharasoftware.com/download/reports/BusinessCaseforAPAutomation.pdf"
+                       target="_blank" rel="noopener">
+                      IOFM/Zahara – "Business Case for AP Automation"</a> (2024)
+                  </li>
+                  <li>
+                    ≈<strong>16%–25%</strong> –
+                    <a href="https://www.zycus.com/blog/e-invoicing/best-in-class-ap-operation-attributes"
+                       target="_blank" rel="noopener">
+                      Zycus – "Best-in-Class AP Operations Attributes"</a> (2024)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="input-group">
+              <label for="automatedDiscountCapture">Discount capture rate after automation (% of available discounts)</label>
+              <input id="automatedDiscountCapture" type="number" value="75.00" step="0.01" min="0">
+              <small>
+                <strong>75.00%</strong> reflects a strong, but not aggressive, automation outcome.
+                <ul>
+                  <li>
+                    ≈<strong>80%+</strong> –
+                    <a href="https://www.snowfox.ai/insights/accounts-payable-kpis-to-track-after-automation/"
+                       target="_blank" rel="noopener">
+                      Snowfox – "AP KPIs After Automation"</a> (2025)
+                  </li>
+                  <li>
+                    ≈<strong>80%</strong> –
+                    <a href="https://www.zaharasoftware.com/download/reports/BusinessCaseforAPAutomation.pdf"
+                       target="_blank" rel="noopener">
+                      IOFM – "AP Key Performance Indicators Study"</a> (2016)
+                  </li>
+                </ul>
+              </small>
+            </div>
+
+            <div class="button-row">
+                <button id="btnMidpoints" onclick="applyMidpointsScenario()">▶ Calculate with suggested benchmark midpoints</button>
+                <button id="btnSafe" class="secondary-btn" onclick="applySafeScenario()">🌧 Apply very conservative (safe) benchmarks</button>
+                <button class="secondary-btn" onclick="downloadScenario()">⬇ Download current scenario (CSV)</button>
+            </div>
+            <div class="scenario-note">
+                <strong>Note on “safe” scenario:</strong> the preset dials back savings by tightening assumptions, e.g. manual cost forced to €14 (vs €16), automated cost to €4 (vs €3.05), duplicate rate 0.05% of spend (vs 0.08%), manual/automated error rates 1.5% / 1.0%, error-fix cost €45, late payment rate 3% with €40 penalty, early-payment discount 1.5% and capture improving only from 25% to 65%. You can then further adjust any of these inputs.
+            </div>
+        </div>
+
+        <!-- RESULTS + KAROLINA CARD -->
+        <div>
+            <div id="results" class="card results-card" style="display:none;">
+                <h2>Results</h2>
+                <table class="results-table" id="resultsTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER AUTHORSHIP -->
+    <div class="sub-authorship">
+        Analytical model designed & developed by Karolina Vicart. Shared for evaluation & demonstration purposes only.
+    </div>
+</div>
+
+<script>
+const BASELINE = {
+  manualCost: 16.00,
+  automatedCost: 3.05,
+  dupRate: 0.08,
+  manualErrorRate: 2.0,
+  automatedErrorRate: 0.8,
+  errorFixCost: 48.64,
+  latePaymentRate: 5.0,
+  latePenalty: 40.0,
+  earlyDiscountRate: 2.0,
+  currentDiscountCapture: 21.0,
+  automatedDiscountCapture: 75.0
+};
+
+const SAFE = {
+  manualCost: 14.0,
+  automatedCost: 4.0,
+  dupRate: 0.05,
+  manualErrorRate: 1.5,
+  automatedErrorRate: 1.0,
+  errorFixCost: 45.0,
+  latePaymentRate: 3.0,
+  latePenalty: 40.0,
+  earlyDiscountRate: 1.5,
+  currentDiscountCapture: 25.0,
+  automatedDiscountCapture: 65.0
+};
+
+let karolinaDismissed = false;
+
+function formatCurrency(value) {
+    if (isNaN(value)) return "–";
+    return value.toLocaleString('en-US', { style: 'currency', currency: 'EUR' });
+}
+
+// shorter, no cents – for labels like "MC €16"
+function formatCurrencyShort(value) {
+    if (isNaN(value)) return "–";
+    return value.toLocaleString('en-GB', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
+function setScenarioMode(mode) {
+    const btnMid = document.getElementById('btnMidpoints');
+    const btnSafe = document.getElementById('btnSafe');
+    if (!btnMid || !btnSafe) return;
+
+    if (mode === 'midpoints') {
+        btnMid.classList.remove('secondary-btn');
+        btnSafe.classList.add('secondary-btn');
+    } else if (mode === 'safe') {
+        btnSafe.classList.remove('secondary-btn');
+        btnMid.classList.add('secondary-btn');
+    } else {
+        // custom – both grey
+        btnMid.classList.add('secondary-btn');
+        btnSafe.classList.add('secondary-btn');
+    }
+}
+
+function applyBaselineValues(source) {
+    const cfg = source === 'safe' ? SAFE : BASELINE;
+    document.getElementById('manualCost').value = cfg.manualCost;
+    document.getElementById('automatedCost').value = cfg.automatedCost;
+    document.getElementById('dupRate').value = cfg.dupRate;
+    document.getElementById('manualErrorRate').value = cfg.manualErrorRate;
+    document.getElementById('automatedErrorRate').value = cfg.automatedErrorRate;
+    document.getElementById('errorFixCost').value = cfg.errorFixCost;
+    document.getElementById('latePaymentRate').value = cfg.latePaymentRate;
+    document.getElementById('latePenalty').value = cfg.latePenalty;
+    document.getElementById('earlyDiscountRate').value = cfg.earlyDiscountRate;
+    document.getElementById('currentDiscountCapture').value = cfg.currentDiscountCapture;
+    document.getElementById('automatedDiscountCapture').value = cfg.automatedDiscountCapture;
+}
+
+function applyMidpointsScenario() {
+    applyBaselineValues('midpoints');
+    setScenarioMode('midpoints');
+    calculateResults(true);
+}
+
+function applySafeScenario() {
+    applyBaselineValues('safe');
+    setScenarioMode('safe');
+    calculateResults(true);
+}
+
+function closeKarolinaCard() {
+    karolinaDismissed = true;
+    const card = document.getElementById('KarolinaCard');
+    if (card) card.style.display = 'none';
+}
+
+function calculateResults(scrollToResults = false) {
+    const invoiceVolume = parseFloat(document.getElementById('invoiceVolume').value) || 0;
+    const avgInvoiceValue = parseFloat(document.getElementById('avgInvoiceValue').value) || 0;
+    const manualCost = parseFloat(document.getElementById('manualCost').value) || 0;
+    const automatedCost = parseFloat(document.getElementById('automatedCost').value) || 0;
+    const dupRateRaw = parseFloat(document.getElementById('dupRate').value) || 0;
+    const duplicateRate = dupRateRaw / 100;
+    const manualErrorRate = (parseFloat(document.getElementById('manualErrorRate').value) || 0) / 100;
+    const automatedErrorRate = (parseFloat(document.getElementById('automatedErrorRate').value) || 0) / 100;
+    const errorCost = parseFloat(document.getElementById('errorFixCost').value) || 0;
+    const lateRateRaw = parseFloat(document.getElementById('latePaymentRate').value) || 0;
+    const lateRate = lateRateRaw / 100;
+    const latePenalty = parseFloat(document.getElementById('latePenalty').value) || 0;
+    const discountRateRaw = parseFloat(document.getElementById('earlyDiscountRate').value) || 0;
+    const discountRate = discountRateRaw / 100;
+    const currentCaptureRaw = parseFloat(document.getElementById('currentDiscountCapture').value) || 0;
+    const currentCapture = currentCaptureRaw / 100;
+    const futureCaptureRaw = parseFloat(document.getElementById('automatedDiscountCapture').value) || 0;
+    const futureCapture = futureCaptureRaw / 100;
+
+    const totalSpend = invoiceVolume * avgInvoiceValue;
+    const manualProcessingCost = invoiceVolume * manualCost;
+    const automatedProcessingCost = invoiceVolume * automatedCost;
+    const processingSavings = manualProcessingCost - automatedProcessingCost;
+
+    const duplicateCost = totalSpend * duplicateRate;
+
+    const manualErrorCost = invoiceVolume * manualErrorRate * errorCost;
+    const automatedErrorCost = invoiceVolume * automatedErrorRate * errorCost;
+    const errorSavings = manualErrorCost - automatedErrorCost;
+
+    const latePenaltyCost = invoiceVolume * lateRate * latePenalty;
+
+    const discountValue = totalSpend * discountRate;
+    const discountSaved = discountValue * (futureCapture - currentCapture);
+
+    const totalPotentialSavings =
+        processingSavings + duplicateCost + errorSavings + latePenaltyCost + discountSaved;
+
+    // Short formatted input values for labels
+    const ivFmt = invoiceVolume.toLocaleString('en-GB', { maximumFractionDigits: 0 });
+    const aivFmt = formatCurrencyShort(avgInvoiceValue);
+    const mcFmt = formatCurrencyShort(manualCost);
+    const acFmt = formatCurrencyShort(automatedCost);
+    const dupPctLabel = dupRateRaw.toFixed(2);
+    const latePctLabel = lateRateRaw.toFixed(2);
+    const discPctLabel = discountRateRaw.toFixed(2);
+    const curCapLabel = currentCaptureRaw.toFixed(1);
+    const futCapLabel = futureCaptureRaw.toFixed(1);
+
+const rows = [
+    [
+      `Total annual spend <span class="calc-note">(IV ${ivFmt} × AIV ${aivFmt})</span>`,
+      formatCurrency(totalSpend)
+    ],
+    [
+      `Manual processing cost <span class="calc-note">(IV ${ivFmt} × MPC/I ${mcFmt})</span>`,
+      formatCurrency(manualProcessingCost)
+    ],
+    [
+      `Automated processing cost <span class="calc-note">(IV ${ivFmt} × APC/I ${acFmt})</span>`,
+      formatCurrency(automatedProcessingCost)
+    ],
+    [
+      `Processing savings <span class="calc-note">(Manual – Automated)</span>`,
+      formatCurrency(processingSavings)
+    ],
+    [
+      `Estimated duplicate payment cost <span class="calc-note">(TS × DR ${dupPctLabel}%)</span>`,
+      formatCurrency(duplicateCost)
+    ],
+    [
+      `Manual error cost <span class="calc-note">(IV × MER × EC)</span>`,
+      formatCurrency(manualErrorCost)
+    ],
+    [
+      `Automated error cost <span class="calc-note">(IV × AER × EC)</span>`,
+      formatCurrency(automatedErrorCost)
+    ],
+    [
+      `Error-related savings <span class="calc-note">(Manual error – Automated error)</span>`,
+      formatCurrency(errorSavings)
+    ],
+    [
+      `Late payment penalties <span class="calc-note">(IV × LPR ${latePctLabel}% × LP)</span>`,
+      formatCurrency(latePenaltyCost)
+    ],
+    [
+      `Additional early-payment discount captured <span class="calc-note">(TS × DR ${discPctLabel}% × (FDC ${futCapLabel}% – CDC ${curCapLabel}%))</span>`,
+      formatCurrency(discountSaved)
+    ],
+    [
+      `Total potential annual savings <span class="calc-note">(all effects combined)</span>`,
+      formatCurrency(totalPotentialSavings)
+    ]
+];
+
+    const table = document.getElementById('resultsTable');
+    let html = "";
+
+    for (let i = 0; i < rows.length; i++) {
+        const label = rows[i][0];
+        const value = rows[i][1];
+        const isTotal = (i === rows.length - 1);
+        html += `<tr class="${isTotal ? 'total-row' : ''}">` +
+                `<td class="label">${label}:</td>` +
+                `<td class="value">${value}</td>` +
+                `</tr>`;
+    }
+
+    table.innerHTML = html;
+    document.getElementById('results').style.display = 'block';
+
+    const kara = document.getElementById('KarolinaCard');
+    if (!karolinaDismissed && kara) {
+        kara.style.display = 'block';
+    }
+
+    if (scrollToResults) {
+        document.getElementById('results').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+}
+
+// Enter = custom calculation, no preset
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            setScenarioMode('custom');
+            calculateResults(true);
+        }
+    });
+});
+
+// Initial mode: midpoints
+setScenarioMode('midpoints');
+
+function downloadScenario() {
+    const invoiceVolume = document.getElementById('invoiceVolume').value;
+    const avgInvoiceValue = document.getElementById('avgInvoiceValue').value;
+    const manualCost = document.getElementById('manualCost').value;
+    const automatedCost = document.getElementById('automatedCost').value;
+    const duplicateRate = document.getElementById('dupRate').value;
+    const manualErrorRate = document.getElementById('manualErrorRate').value;
+    const automatedErrorRate = document.getElementById('automatedErrorRate').value;
+    const errorCost = document.getElementById('errorFixCost').value;
+    const lateRate = document.getElementById('latePaymentRate').value;
+    const latePenalty = document.getElementById('latePenalty').value;
+    const discountRate = document.getElementById('earlyDiscountRate').value;
+    const currentCapture = document.getElementById('currentDiscountCapture').value;
+    const futureCapture = document.getElementById('automatedDiscountCapture').value;
+
+    const iv = parseFloat(invoiceVolume) || 0;
+    const av = parseFloat(avgInvoiceValue) || 0;
+    const mc = parseFloat(manualCost) || 0;
+    const ac = parseFloat(automatedCost) || 0;
+    const dr = (parseFloat(duplicateRate) || 0) / 100;
+    const mer = (parseFloat(manualErrorRate) || 0) / 100;
+    const aer = (parseFloat(automatedErrorRate) || 0) / 100;
+    const ec = parseFloat(errorCost) || 0;
+    const lr = (parseFloat(lateRate) || 0) / 100;
+    const lp = parseFloat(latePenalty) || 0;
+    const discR = (parseFloat(discountRate) || 0) / 100;
+    const cc = (parseFloat(currentCapture) || 0) / 100;
+    const fc = (parseFloat(futureCapture) || 0) / 100;
+
+    const totalSpend = iv * av;
+    const manualProcessingCost = iv * mc;
+    const automatedProcessingCost = iv * ac;
+    const processingSavings = manualProcessingCost - automatedProcessingCost;
+    const duplicateCost = totalSpend * dr;
+    const manualErrorCost = iv * mer * ec;
+    const automatedErrorCost = iv * aer * ec;
+    const errorSavings = manualErrorCost - automatedErrorCost;
+    const latePenaltyCost = iv * lr * lp;
+    const discountValue = totalSpend * discR;
+    const discountSaved = discountValue * (fc - cc);
+    const totalPotentialSavings =
+        processingSavings + duplicateCost + errorSavings + latePenaltyCost + discountSaved;
+
+    const rows = [
+        ["Parameter","Value"],
+        ["Annual invoice volume", invoiceVolume],
+        ["Average invoice value (€)", avgInvoiceValue],
+        ["Manual cost per invoice (€)", manualCost],
+        ["Automated cost per invoice (€)", automatedCost],
+        ["Duplicate rate (% of spend)", duplicateRate],
+        ["Manual error rate (%)", manualErrorRate],
+        ["Automated error rate (%)", automatedErrorRate],
+        ["Cost to fix each error (€)", errorCost],
+        ["Late payment rate (%)", lateRate],
+        ["Average late payment penalty per invoice (€)", latePenalty],
+        ["Early payment discount rate (%)", discountRate],
+        ["Current discount capture (%)", currentCapture],
+        ["Discount capture after automation (%)", futureCapture],
+        [],
+        ["Calculated metric","Value (€)"],
+        ["Total annual spend", totalSpend],
+        ["Manual processing cost", manualProcessingCost],
+        ["Automated processing cost", automatedProcessingCost],
+        ["Processing savings", processingSavings],
+        ["Duplicate payment cost", duplicateCost],
+        ["Manual error cost", manualErrorCost],
+        ["Automated error cost", automatedErrorCost],
+        ["Error-related savings", errorSavings],
+        ["Late payment penalties", latePenaltyCost],
+        ["Additional early-payment discount captured", discountSaved],
+        ["Total potential annual savings", totalPotentialSavings]
+    ];
+
+    let csvContent = "data:text/csv;charset=utf-8," +
+        rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "ap_value_leakage_scenario.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+</body>
+</html>

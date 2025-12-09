@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Finance Scenario – FTE Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.4;
+      color: #0f172a;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 980px;
+      padding: 24px 16px 40px;
+      box-sizing: border-box;
+    }
+
+    .header-strip {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 18px 18px 0 0;
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .header-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .header-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .header-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .header-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      padding: 22px 20px 22px;
+      box-sizing: border-box;
+      border-top: 1px solid #111827;
+      position: relative;
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        padding: 26px 26px 24px;
+      }
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      margin: 0 0 0.35rem;
+    }
+
+    .subtitle-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 0.7rem;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .info-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 1px solid #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #6b7280;
+      cursor: pointer;
+      background: #f9fafb;
+    }
+
+    .info-popover {
+      position: absolute;
+      top: 58px;
+      right: 22px;
+      max-width: 280px;
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: #4b5563;
+      z-index: 10;
+      display: none;
+    }
+
+    .info-popover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .info-popover button.close-popover {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #6b7280;
+      padding: 0 4px;
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin: 12px 0 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 24px;
+      }
+    }
+
+    .field {
+      margin-top: 10px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+
+    .field small {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      background: #f9fafb;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.14);
+      background: #ffffff;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .inline-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .btn-row {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+    }
+
+    button.primary {
+      background: #1d4ed8;
+      color: #ffffff;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.32);
+    }
+
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.18);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+    }
+
+    .results-card {
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eff6ff, #e5e7eb);
+      padding: 16px 14px;
+      box-sizing: border-box;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    @media (min-width: 768px) {
+      .results-card {
+        padding: 18px 18px;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 14px;
+      }
+    }
+
+    .result-main {
+      border-right: none;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.5);
+      padding-bottom: 10px;
+    }
+
+    @media (min-width: 768px) {
+      .result-main {
+        border-right: 1px solid rgba(148, 163, 184, 0.5);
+        border-bottom: none;
+        padding-bottom: 0;
+        padding-right: 14px;
+      }
+    }
+
+    .result-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .result-number {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+
+    .result-tagline {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.06);
+      color: #0f172a;
+      margin-top: 6px;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #f97316;
+    }
+
+    .result-subgrid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .result-item {
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .result-item span.label {
+      color: #6b7280;
+    }
+
+    .result-item span.value {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .scenarios {
+      margin-top: 18px;
+    }
+
+    .scenarios h2 {
+      font-size: 0.9rem;
+      margin: 0 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scenarios p {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin: 0 0 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 6px;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .note {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header-strip">
+      <div class="header-left">
+        <div class="header-title">Finance Scenario Tool</div>
+        <div class="header-subtitle">GERCEE Finance</div>
+      </div>
+      <div class="header-badge">
+        <span class="header-dot"></span>
+        <span>Working file – not a system of record</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>FTE Calculator</h1>
+
+      <div class="subtitle-row">
+        <div class="subtitle">
+          Estimate how much automatable Coupa/AP work consumes in FTEs and annual cost
+        </div>
+        <span class="info-icon" id="infoToggle" title="More context">i</span>
+      </div>
+
+      <div class="info-popover" id="infoPopover">
+        <div class="info-popover-header">
+          <span>What this calculator does*</span>
+          <button class="close-popover" id="infoClose" aria-label="Close">×</button>
+        </div>
+        <div>
+          It estimates how much recurring, manual Coupa/AP work could be automated by:
+          <br />– converting hours per month into FTEs, and
+          <br />– multiplying those FTEs by a loaded annual cost.
+          <br /><br />
+          Use the “Automatable hours” fields only for tasks that are realistically automatable
+          (e.g. GR chasing, coding checks, supplier follow-up), not for the entire AP job.
+        </div>
+      </div>
+
+      <div class="section-title">Inputs &amp; FTE estimate</div>
+
+      <!-- INPUTS + RESULTS GRID -->
+      <div class="grid">
+        <!-- LEFT: INPUTS -->
+        <div>
+          <div class="field">
+            <label>
+              <span>Gross annual salary per FTE (€)</span>
+              <small>Typical accountant / AP level</small>
+            </label>
+            <input type="number" id="salary" min="0" step="500" value="38000" />
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Loaded cost multiplier</span>
+              <small>Includes employer taxes, benefits, overhead</small>
+            </label>
+            <div class="inline-fields">
+              <select id="multiplierPreset">
+                <option value="1.45">Conservative (1.45×)</option>
+                <option value="1.6" selected>Realistic (1.60×)</option>
+                <option value="1.75">High (1.75×)</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input type="number" id="multiplierCustom" min="1" step="0.01" value="1.60" />
+            </div>
+            <small>Indicative: 1.6× is a reasonable blended estimate across GER/AT/PL/CZ.</small>
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Automatable hours per person</span>
+              <small>Hours per month (per AP / finance role)</small>
+            </label>
+            <input type="number" id="hoursPerPerson" min="0" step="0.1" value="59.65" />
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Number of people</span>
+              <small>Roles doing this automatable work</small>
+            </label>
+            <input type="number" id="numPeople" min="1" step="1" value="3" />
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Additional automatable hours</span>
+              <small>Hours per month (other markets/roles)</small>
+            </label>
+            <input type="number" id="extraHours" min="0" step="0.1" value="32" />
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Working time per FTE</span>
+              <small>Hours per month (e.g. 160 = 8h × 20 days)</small>
+            </label>
+            <input type="number" id="workingHoursPerMonth" min="1" step="1" value="160" />
+          </div>
+
+          <div class="btn-row">
+            <button class="primary" id="calculateBtn">▶ Calculate</button>
+            <button class="secondary" id="logScenarioBtn">+ Add scenario below</button>
+            <button class="secondary" id="downloadCsvBtn">⬇ Download scenarios (CSV)</button>
+          </div>
+
+          <div class="note">
+            No data is sent anywhere automatically. To share results, export the scenarios
+            as CSV and forward the file.
+          </div>
+        </div>
+
+        <!-- RIGHT: RESULTS -->
+        <div>
+          <div class="results-card" id="resultsCard">
+            <div class="result-main">
+              <div class="result-title">Estimated FTE equivalent</div>
+              <div class="result-number" id="fteResult">–</div>
+              <div class="result-tagline" id="fteTagline">
+                Enter inputs and click “Calculate”.
+              </div>
+              <div class="badge" id="fteBadge" style="display:none;">
+                <span class="badge-dot"></span>
+                <span id="badgeText"></span>
+              </div>
+            </div>
+            <div>
+              <div class="result-subgrid">
+                <div class="result-item">
+                  <span class="label">Loaded cost per FTE / year</span>
+                  <span class="value" id="costPerFte">–</span>
+                </div>
+                <div class="result-item">
+                  <span class="label">Annual cost – status quo (do nothing)</span>
+                  <span class="value" id="annualCost">–</span>
+                </div>
+                <div class="result-item">
+                  <span class="label">Monthly cost – status quo</span>
+                  <span class="value" id="monthlyCost">–</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="note">
+            FTE equivalent = (automatable hours per person × number of people + additional
+            automatable hours) ÷ working hours per FTE/month.
+          </div>
+        </div>
+      </div>
+
+      <!-- SAVED SCENARIOS -->
+      <div class="scenarios">
+        <h2>Saved scenarios</h2>
+        <p>
+          Use “Add scenario below” to capture a set of inputs &amp; results. You can export all
+          scenarios as CSV.
+        </p>
+        <div id="scenarioTableWrapper"></div>
+      </div>
+
+      <div class="footer-note">
+        Model designed and developed by Karolina Vicart. Shared for evaluation purposes only.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function formatCurrency(value, decimals = 0) {
+      if (isNaN(value)) return "–";
+      return value.toLocaleString("en-GB", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    function formatNumber(value, decimals = 2) {
+      if (isNaN(value)) return "–";
+      return value.toLocaleString("en-GB", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    const salaryInput = document.getElementById("salary");
+    const multiplierPreset = document.getElementById("multiplierPreset");
+    const multiplierCustom = document.getElementById("multiplierCustom");
+    const hoursPerPerson = document.getElementById("hoursPerPerson");
+    const numPeople = document.getElementById("numPeople");
+    const extraHoursInput = document.getElementById("extraHours");
+    const workingHoursPerMonth = document.getElementById("workingHoursPerMonth");
+
+    const fteResult = document.getElementById("fteResult");
+    const fteTagline = document.getElementById("fteTagline");
+    const fteBadge = document.getElementById("fteBadge");
+    const badgeText = document.getElementById("badgeText");
+    const costPerFte = document.getElementById("costPerFte");
+    const annualCost = document.getElementById("annualCost");
+    const monthlyCost = document.getElementById("monthlyCost");
+
+    const calculateBtn = document.getElementById("calculateBtn");
+    const logScenarioBtn = document.getElementById("logScenarioBtn");
+    const downloadCsvBtn = document.getElementById("downloadCsvBtn");
+    const scenarioTableWrapper = document.getElementById("scenarioTableWrapper");
+
+    const infoToggle = document.getElementById("infoToggle");
+    const infoPopover = document.getElementById("infoPopover");
+    const infoClose = document.getElementById("infoClose");
+
+    let scenarios = [];
+
+    function getMultiplier() {
+      if (multiplierPreset.value === "custom") {
+        const custom = parseFloat(multiplierCustom.value);
+        return isNaN(custom) ? 1 : custom;
+      }
+      const preset = parseFloat(multiplierPreset.value);
+      multiplierCustom.value = preset.toFixed(2);
+      return preset;
+    }
+
+    multiplierPreset.addEventListener("change", () => {
+      const m = getMultiplier();
+      multiplierCustom.value = m.toFixed(2);
+      runCalculation();
+    });
+
+    multiplierCustom.addEventListener("input", () => {
+      multiplierPreset.value = "custom";
+      runCalculation();
+    });
+
+    function runCalculation() {
+      const salary = parseFloat(salaryInput.value);
+      const multiplier = getMultiplier();
+      const hours = parseFloat(hoursPerPerson.value);
+      const people = parseFloat(numPeople.value);
+      const working = parseFloat(workingHoursPerMonth.value);
+      const extraHours = parseFloat(extraHoursInput.value) || 0;
+
+      if (
+        [salary, multiplier, hours, people, working].some(
+          (v) => isNaN(v) || v <= 0
+        )
+      ) {
+        fteResult.textContent = "–";
+        fteTagline.textContent = "Enter inputs and click “Calculate”.";
+        fteBadge.style.display = "none";
+        costPerFte.textContent = "–";
+        annualCost.textContent = "–";
+        monthlyCost.textContent = "–";
+        return null;
+      }
+
+      const loadedCostPerFte = salary * multiplier;
+      const totalHoursPerMonth = (hours * people) + extraHours;
+      const fteEquivalent = totalHoursPerMonth / working;
+      const annualCostValue = fteEquivalent * loadedCostPerFte;
+      const monthlyCostValue = annualCostValue / 12;
+
+      fteResult.textContent = formatNumber(fteEquivalent, 2) + " FTE";
+      costPerFte.textContent = formatCurrency(loadedCostPerFte, 0);
+      annualCost.textContent = formatCurrency(annualCostValue, 0);
+      monthlyCost.textContent = formatCurrency(monthlyCostValue, 0);
+
+      const percentageFte = (fteEquivalent * 100).toFixed(0);
+      fteTagline.textContent =
+        "This automatable workload currently consumes approximately " + percentageFte +
+        "% of a full FTE per year.";
+
+      if (fteEquivalent >= 1.0) {
+        badgeText.textContent = "≥1 FTE of work – strong automation candidate.";
+        fteBadge.style.display = "inline-flex";
+      } else if (fteEquivalent >= 0.5) {
+        badgeText.textContent = "0.5–1 FTE – still material.";
+        fteBadge.style.display = "inline-flex";
+      } else {
+        badgeText.textContent = "<0.5 FTE – depends on complexity and risk.";
+        fteBadge.style.display = "inline-flex";
+      }
+
+      return {
+        salary,
+        multiplier,
+        hours,
+        people,
+        working,
+        extraHours,
+        totalHoursPerMonth,
+        fteEquivalent,
+        loadedCostPerFte,
+        annualCostValue,
+        monthlyCostValue,
+      };
+    }
+
+    calculateBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      runCalculation();
+    });
+
+    // Trigger calculation on Enter in key inputs
+    const enterInputs = [
+      salaryInput,
+      multiplierCustom,
+      hoursPerPerson,
+      numPeople,
+      extraHoursInput,
+      workingHoursPerMonth,
+    ];
+
+    enterInputs.forEach((el) => {
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          runCalculation();
+        }
+      });
+    });
+
+    function renderScenarioTable() {
+      if (!scenarios.length) {
+        scenarioTableWrapper.innerHTML = "<div class='note'>No scenarios saved yet.</div>";
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Salary (€)</th>
+              <th>Multiplier</th>
+              <th>Hours / person / month</th>
+              <th>People</th>
+              <th>Additional hours</th>
+              <th>FTE eq.</th>
+              <th>Annual cost (€)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      scenarios.forEach((s, idx) => {
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${s.salary.toLocaleString("en-GB", { maximumFractionDigits: 0 })}</td>
+            <td>${s.multiplier.toFixed(2)}×</td>
+            <td>${s.hours.toFixed(2)}</td>
+            <td>${s.people}</td>
+            <td>${s.extraHours.toFixed(1)}</td>
+            <td>${s.fteEquivalent.toFixed(2)}</td>
+            <td>${s.annualCostValue.toLocaleString("en-GB", {
+              maximumFractionDigits: 0,
+            })}</td>
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table>";
+      scenarioTableWrapper.innerHTML = html;
+    }
+
+    logScenarioBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const result = runCalculation();
+      if (!result) return;
+      scenarios.push(result);
+      renderScenarioTable();
+    });
+
+    function downloadCsv() {
+      if (!scenarios.length) return;
+
+      const header = [
+        "Scenario",
+        "SalaryEUR",
+        "Multiplier",
+        "HoursPerPersonPerMonth",
+        "People",
+        "AdditionalHoursPerMonth",
+        "WorkingHoursPerMonth",
+        "FteEquivalent",
+        "LoadedCostPerFteEUR",
+        "AnnualCostEUR",
+        "MonthlyCostEUR",
+        "TotalAutomatableHoursPerMonth"
+      ];
+
+      const rows = scenarios.map((s, idx) => [
+        idx + 1,
+        s.salary,
+        s.multiplier.toFixed(2),
+        s.hours.toFixed(2),
+        s.people,
+        s.extraHours.toFixed(2),
+        s.working,
+        s.fteEquivalent.toFixed(4),
+        s.loadedCostPerFte.toFixed(2),
+        s.annualCostValue.toFixed(2),
+        s.monthlyCostValue.toFixed(2),
+        s.totalHoursPerMonth.toFixed(2),
+      ]);
+
+      const csvContent =
+        [header, ...rows]
+          .map((row) => row.join(","))
+          .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fte_scenarios.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    downloadCsvBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      downloadCsv();
+    });
+
+    // Info popover events
+    infoToggle.addEventListener("click", () => {
+      const isVisible = infoPopover.style.display === "block";
+      infoPopover.style.display = isVisible ? "none" : "block";
+    });
+
+    infoClose.addEventListener("click", () => {
+      infoPopover.style.display = "none";
+    });
+
+    // Close popover if clicking outside
+    document.addEventListener("click", (e) => {
+      if (!infoPopover.contains(e.target) && e.target !== infoToggle) {
+        infoPopover.style.display = "none";
+      }
+    });
+
+    // Initial render & default calculation
+    renderScenarioTable();
+    runCalculation();
+  </script>
+</body>
+</html>
